@@ -10,6 +10,7 @@ import { DeliveriesModule } from './deliveries/deliveries.module';
 import { WalletModule } from './wallet/wallet.module';
 import { PositionsModule } from './positions/positions.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { LocationsModule } from './locations/locations.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     WalletModule,
     PositionsModule,
     ReviewsModule,
+    LocationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

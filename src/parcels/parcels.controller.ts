@@ -1,13 +1,6 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Patch,
-  UseGuards,
-  Request,
-  Query,
+  Controller, Get, Post, Body, Param, Patch,
+  UseGuards, Request, Query,
 } from '@nestjs/common';
 import { ParcelsService } from './parcels.service';
 import { Parcel } from './parcel.entity';
@@ -17,6 +10,31 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 export class ParcelsController {
   constructor(private readonly parcelsService: ParcelsService) {}
+
+  /** 🆕 Estimer le prix SANS créer le colis */
+  @Post('estimate')
+  estimate(@Body() body: {
+    pickupLat: number;
+    pickupLng: number;
+    deliveryLat: number;
+    deliveryLng: number;
+    weightKg?: number;
+  }) {
+    return this.parcelsService.estimate(body);
+  }
+
+  /** 🆕 Estimer le prix groupé */
+  @Post('estimate-group')
+  estimateGroup(@Body() body: {
+    pickupLat: number;
+    pickupLng: number;
+    deliveryLat: number;
+    deliveryLng: number;
+    weightKg?: number;
+    count: number;
+  }) {
+    return this.parcelsService.estimateGroup(body);
+  }
 
   @Post()
   create(@Request() req: any, @Body() data: Partial<Parcel>): Promise<Parcel> {
@@ -38,32 +56,21 @@ export class ParcelsController {
     return this.parcelsService.findAvailableForLivreur();
   }
 
-  /**
-   * Calcule le prix groupé pour un ensemble de colis (sans appliquer).
-   */
   @Post('calculate-group-price')
   calculateGroupPrice(@Body() body: { parcelIds: string[] }) {
     return this.parcelsService.calculateGroupedPrice(body.parcelIds);
   }
 
-  /**
-   * Applique la formule de groupage et met à jour les prix.
-   */
   @Post('apply-group-pricing')
   applyGroupPricing(@Body() body: { parcelIds: string[] }) {
     return this.parcelsService.applyGroupedPricing(body.parcelIds);
   }
 
-  /**
-   * Trouve les colis compatibles pour le groupage.
-   */
   @Get(':id/groupable')
-  findGroupable(
-    @Param('id') id: string,
-    @Query('radius') radius?: string,
-  ): Promise<Parcel[]> {
-    const radiusKm = radius ? Number(radius) : 3;
-    return this.parcelsService.findGroupableParcels(id, radiusKm);
+  findGroupable(@Param('id') id: string, @Query('radius') radius?: string) {
+    return this.parcelsService.findGroupableParcels(
+      id, radius ? Number(radius) : 3,
+    );
   }
 
   @Get(':id')
@@ -82,11 +89,7 @@ export class ParcelsController {
   }
 
   @Patch(':id/deliver')
-  deliver(
-    @Param('id') id: string,
-    @Body() body: { otp: string },
-    @Request() req: any,
-  ): Promise<Parcel> {
+  deliver(@Param('id') id: string, @Body() body: { otp: string }, @Request() req: any): Promise<Parcel> {
     return this.parcelsService.markDelivered(id, req.user.userId, body.otp);
   }
 
