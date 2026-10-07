@@ -179,6 +179,7 @@ export class DeliveriesService {
   async findActiveByLivreur(livreurId: string): Promise<Delivery[]> {
     return this.deliveriesRepository.find({
       where: [
+        { livreurId, status: DeliveryStatus.ASSIGNED },
         { livreurId, status: DeliveryStatus.ACCEPTED },
         { livreurId, status: DeliveryStatus.PICKUP_ARRIVED },
         { livreurId, status: DeliveryStatus.PICKED_UP },

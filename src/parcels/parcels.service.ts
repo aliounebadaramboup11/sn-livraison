@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Parcel, ParcelStatus, DeliveryType } from './parcel.entity';
 import { PricingService } from './pricing.service';
+import { Delivery } from '../deliveries/delivery.entity';
 
 @Injectable()
 export class ParcelsService {
@@ -10,6 +11,8 @@ export class ParcelsService {
     @InjectRepository(Parcel)
     private parcelsRepository: Repository<Parcel>,
     private pricingService: PricingService,
+    @InjectRepository(Delivery)
+    private deliveriesRepository: Repository<Delivery>,
   ) {}
 
   /** Estimation du prix (sans créer le colis) */
@@ -182,7 +185,28 @@ export class ParcelsService {
     }
     parcel.status = ParcelStatus.ASSIGNED;
     parcel.livreurId = livreurId;
-    return this.parcelsRepository.save(parcel);
+    const saved = await this.parcelsRepository.save(parcel);
+
+    // Créer aussi une entrée Delivery pour le suivi
+    try {
+      const existing = await this.deliveriesRepository.findOne({ where: { parcelId: id } });
+      if (!existing) {
+        const delivery = this.deliveriesRepository.create({
+          parcelId: id,
+          livreurId,
+          status: 'assigned' as any,
+          assignedAt: new Date(),
+          acceptedAt: new Date(),
+          livreurEarning: parcel.livreurEarning,
+          commission: parcel.commission,
+        });
+        await this.deliveriesRepository.save(delivery);
+      }
+    } catch (err) {
+      console.error('Erreur création delivery:', err.message);
+    }
+
+    return saved;
   }
 
   async markPickedUp(id: string, livreurId: string): Promise<Parcel> {
