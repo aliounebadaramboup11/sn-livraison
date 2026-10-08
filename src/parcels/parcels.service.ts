@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { Parcel, ParcelStatus, DeliveryType } from './parcel.entity';
+import { Parcel, ParcelStatus, DeliveryType, ParcelCategory } from './parcel.entity';
 import { PricingService } from './pricing.service';
 import { Delivery } from '../deliveries/delivery.entity';
 
@@ -182,6 +182,20 @@ export class ParcelsService {
     const parcel = await this.findOne(id);
     if (parcel.status !== ParcelStatus.PENDING) {
       throw new ForbiddenException('Ce colis a déjà été assigné');
+    }
+
+    // 🆕 Règle : un seul colis lourd par livraison
+    if (parcel.category === 'medium_package') {
+      const existingHeavy = await this.parcelsRepository.findOne({
+        where: {
+          livreurId,
+          category: ParcelCategory.MEDIUM_PACKAGE,
+          status: ParcelStatus.ASSIGNED,
+        },
+      });
+      if (existingHeavy) {
+        throw new ForbiddenException('Vous avez déjà un colis lourd dans cette tournée. Terminez-le d\'abord.');
+      }
     }
     parcel.status = ParcelStatus.ASSIGNED;
     parcel.livreurId = livreurId;

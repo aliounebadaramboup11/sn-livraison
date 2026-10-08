@@ -11,6 +11,7 @@ import { WalletModule } from './wallet/wallet.module';
 import { PositionsModule } from './positions/positions.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { LocationsModule } from './locations/locations.module';
+import { LivreursModule } from './livreurs/livreurs.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { LocationsModule } from './locations/locations.module';
     PositionsModule,
     ReviewsModule,
     LocationsModule,
+    LivreursModule,
   ],
   controllers: [AppController],
   providers: [AppService],
