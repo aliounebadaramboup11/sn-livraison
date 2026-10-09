@@ -24,49 +24,23 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
+    
     const user = await this.usersService.create({
       phone,
       password: hashedPassword,
       firstName,
       lastName,
       role,
-      status: role === UserRole.LIVREUR ? UserStatus.PENDING : UserStatus.ACTIVE,
-      otpCode,
-      otpExpiresAt,
-      phoneVerified: false,
-    });
-
-    // TODO: Envoyer l'OTP par SMS (simulé pour l'instant via log)
-    console.log(`📱 OTP pour ${phone}: ${otpCode}`);
-
-    return {
-      message: 'Compte créé. Vérifiez votre téléphone pour le code OTP.',
-      userId: user.id,
-    };
-  }
-
-  async verifyOtp(phone: string, otpCode: string) {
-    const user = await this.usersService.findByPhone(phone);
-    if (!user) {
-      throw new UnauthorizedException('Utilisateur introuvable');
-    }
-    if (user.otpCode !== otpCode) {
-      throw new UnauthorizedException('Code OTP invalide');
-    }
-    if (user.otpExpiresAt && user.otpExpiresAt < new Date()) {
-      throw new UnauthorizedException('Code OTP expiré');
-    }
-
-    await this.usersService.update(user.id, {
+      status: UserStatus.ACTIVE,
       phoneVerified: true,
       otpCode: null,
       otpExpiresAt: null,
     });
 
-    return this.generateToken(user);
+    return {
+      message: 'Compte créé avec succès.',
+      userId: user.id,
+    };
   }
 
   async login(phone: string, password: string) {
@@ -85,6 +59,12 @@ export class AuthService {
     }
 
     return this.generateToken(user);
+  }
+
+  // On ajoute une fonction vide pour satisfaire le controller
+  async verifyOtp(phone: string, otpCode: string) {
+    // Cette fonction ne fait plus rien, mais elle existe
+    return { message: "Vérification OTP désactivée." };
   }
 
   private generateToken(user: User) {

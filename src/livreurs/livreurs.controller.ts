@@ -1,71 +1,89 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Body,
-  Param,
-  UseGuards,
-  Request,
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { LivreursService } from './livreurs.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { DocumentType } from './livreur-document.entity';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../users/user.entity';
 
 @Controller('livreurs')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class LivreursController {
   constructor(private readonly livreursService: LivreursService) {}
 
+  @Post('admin/create')
+  @Roles(UserRole.ADMIN)
+  async createLivreur(@Body() body: any) {
+    return this.livreursService.createLivreur(body);
+  }
+
+  // MODIFIÉ : On transmet le livreurId au service
   @Post('documents')
-  saveDocument(
-    @Request() req: any,
-    @Body() body: { type: DocumentType; url: string; numeroCni?: string; motoPlate?: string; motoBrand?: string; permisNumero?: string },
-  ) {
+  @Roles(UserRole.LIVREUR, UserRole.ADMIN)
+  async uploadDocument(@Request() req, @Body() body: any) {
     return this.livreursService.saveDocument(req.user.userId, body.type, body.url, {
+      livreurId: body.livreurId,
       numeroCni: body.numeroCni,
-      motoPlate: body.motoPlate,
-      motoBrand: body.motoBrand,
       permisNumero: body.permisNumero,
     });
   }
 
   @Get('me/documents')
-  myDocuments(@Request() req: any) {
+  @Roles(UserRole.LIVREUR)
+  async getMyDocuments(@Request() req) {
     return this.livreursService.findByLivreur(req.user.userId);
   }
 
   @Get('me/status')
-  myStatus(@Request() req: any) {
-    return this.livreursService.checkComplete(req.user.userId);
+  @Roles(UserRole.LIVREUR)
+  async getMyStatus(@Request() req) {
+    return this.livreursService.findByLivreur(req.user.userId);
   }
 
   @Get('admin/pending')
-  pending() {
+  @Roles(UserRole.ADMIN)
+  async getPendingLivreurs() {
     return this.livreursService.findPendingLivreurs();
   }
 
+  @Get('admin/all')
+  @Roles(UserRole.ADMIN)
+  async getAllLivreurs() {
+    return this.livreursService.findAllLivreurs();
+  }
+
   @Get(':id/documents')
-  documentsOf(@Param('id') id: string) {
+  @Roles(UserRole.ADMIN)
+  async getDocuments(@Param('id') id: string) {
+    return this.livreursService.findDocumentsByLivreur(id);
+  }
+
+  @Get(':id')
+  @Roles(UserRole.ADMIN)
+  async getLivreurById(@Param('id') id: string) {
     return this.livreursService.findByLivreur(id);
   }
 
   @Patch('documents/:id/verify')
-  verify(@Param('id') id: string, @Request() req: any) {
+  @Roles(UserRole.ADMIN)
+  async verifyDocument(@Param('id') id: string, @Request() req) {
     return this.livreursService.verifyDocument(id, req.user.userId);
   }
 
   @Patch('documents/:id/reject')
-  reject(
-    @Param('id') id: string,
-    @Body() body: { reason: string },
-    @Request() req: any,
-  ) {
+  @Roles(UserRole.ADMIN)
+  async rejectDocument(@Param('id') id: string, @Request() req, @Body() body: { reason: string }) {
     return this.livreursService.rejectDocument(id, req.user.userId, body.reason);
   }
 
   @Patch(':id/activate')
-  activate(@Param('id') id: string) {
+  @Roles(UserRole.ADMIN)
+  async activateLivreur(@Param('id') id: string) {
     return this.livreursService.tryActivate(id);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  async deleteLivreur(@Param('id') id: string) {
+    return this.livreursService.deleteLivreur(id);
   }
 }

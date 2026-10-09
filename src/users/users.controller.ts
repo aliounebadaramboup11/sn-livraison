@@ -30,4 +30,13 @@ export class UsersController {
   remove(@Param('id') id: string): Promise<void> {
     return this.usersService.remove(id);
   }
+
+  // NOUVELLE ROUTE : Changer le mot de passe
+  @Patch(':id/password')
+  changePassword(
+    @Param('id') id: string,
+    @Body() body: { currentPassword: string; newPassword: string },
+  ): Promise<{ message: string }> {
+    return this.usersService.changePassword(id, body.currentPassword, body.newPassword);
+  }
 }
