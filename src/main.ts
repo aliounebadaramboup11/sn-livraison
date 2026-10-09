@@ -4,9 +4,12 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // CORS explicite - liste les origines autorisées
+  // On récupère l'URL du frontend depuis les variables d'environnement
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
   app.enableCors({
     origin: [
+      frontendUrl,
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:5175',
@@ -25,8 +28,9 @@ async function bootstrap() {
     maxAge: 3600,
   });
 
-  await app.listen(3000, '0.0.0.0');
-  console.log('🚀 Backend NestJS démarré sur http://localhost:3000');
-  console.log('✅ CORS activé pour : localhost:5173 à 5178, 8080');
+  const port = process.env.PORT || 3000;
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 Backend NestJS démarré sur http://localhost:${port}`);
+  console.log(`✅ CORS activé pour : ${frontendUrl}`);
 }
 bootstrap();
